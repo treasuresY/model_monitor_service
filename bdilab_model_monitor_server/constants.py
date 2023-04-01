@@ -1,0 +1,2 @@
+DEFAULT_HTTP_PORT = 8080
+DEFAULT_MODEL_NAME = "monitor_model"
