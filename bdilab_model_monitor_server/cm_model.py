@@ -10,10 +10,8 @@ from enum import Enum
 
 
 class TaskType(Enum):
-    classification_binary_case = 1
-    classification_multiclass_case = 2
-    classification_multilabel_case = 3
-    regression = 4
+    classification = 1  # 适用于二分类、多标签二分类、多类别二分类任务
+    regression = 2
 
     def __str__(self):
         return self.value
@@ -52,7 +50,7 @@ class CustomMetricsModel(CEModel):
         y_pred = inputs["y_pred"]
         output = {}
         output["data"] = {}
-        if task_type == TaskType.classification_multilabel_case.value:
+        if task_type == TaskType.classification.value:
             output["data"]["multilabel_confusion_matrix"] = self.get_multilabel_confusion_matrix(self, y_true=y_true, y_pred=y_pred)
             output["data"]["accuracy_score"] = self.get_accuracy_score(self, y_true=y_true, y_pred=y_pred)
             output["data"]["precision_score"] = self.get_precision_score(self, y_true=y_true, y_pred=y_pred)
@@ -60,23 +58,9 @@ class CustomMetricsModel(CEModel):
             output["data"]["f1_score"] = self.get_f1_score(self, y_true=y_true, y_pred=y_pred)
             output["data"]["log_loss"] = self.get_log_loss(self, y_true=y_true, y_pred=y_pred)
             output["data"]["roc_auc_score"] = self.get_roc_auc_score(self, y_true=y_true, y_pred=y_pred)
-        elif task_type == TaskType.classification_multiclass_case.value:
             output["data"]["balanced_accuracy_score"] = self.get_balanced_accuracy_score(self, y_true=y_true, y_pred=y_pred)
             output["data"]["confusion_matrix"] = self.get_confusion_matrix(self, y_true=y_true, y_pred=y_pred)
             output["data"]["matthews_corrcoef"] = self.get_matthews_corrcoef(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["roc_auc_score"] = self.get_roc_auc_score(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["top_k_accuracy_score"] = self.get_top_k_accuracy_score(self, y_true=y_true, y_pred=y_pred)
-        elif task_type == TaskType.classification_binary_case.value:
-            output["data"]["precision_recall_curve"] = {}
-            precision, recall, thresholds = self.get_precision_recall_curve(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["precision_recall_curve"]["precision"] = precision
-            output["data"]["precision_recall_curve"]["recall"] = recall
-            output["data"]["precision_recall_curve"]["thresholds"] = thresholds
-            output["data"]["roc_curve"] = {}
-            fpr, tpr, thresholds = self.get_roc_curve(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["roc_curve"]["fpr"] = fpr
-            output["data"]["roc_curve"]["tpr"] = tpr
-            output["data"]["roc_curve"]["thresholds"] = thresholds
         elif task_type == TaskType.regression.value:
             output["data"]["get_explained_variance_score"] = self.get_explained_variance_score(self, y_true=y_true, y_pred=y_pred)
             output["data"]["mean_absolute_error"] = self.get_mean_absolute_error(self, y_true=y_true, y_pred=y_pred)
@@ -89,16 +73,20 @@ class CustomMetricsModel(CEModel):
         else:
             raise Exception("不支持此种类型的模型监控指标")
 
+        # 删除值为 None 的键值对
+        cleaned_output = {}
+        cleaned_output["data"] = {k: v for k, v in output["data"].items() if v is not None}
+
         # 度量指标向prometheus公开
         metrics: List[Dict] = []
-        for k in output["data"].keys():
-            _append_model_monitor_metrcs(metrics, output["data"], k)
+        for k in cleaned_output["data"].keys():
+            if k not in ["multilabel_confusion_matrix", "confusion_matrix"]:    # 此类指标结果无法转换为有效的Prometheus指标类型格式
+                _append_model_monitor_metrcs(metrics, cleaned_output["data"], k)
 
-        output = json.loads(json.dumps(output, cls=NumpyEncoder))
-        response = ModelResponse(data=output, metrics=metrics)
+        res_data = json.loads(json.dumps(cleaned_output, cls=NumpyEncoder))
+        response = ModelResponse(data=res_data, metrics=metrics)
         return response
 
-    # binary classification case
 
     @staticmethod
     def get_precision_recall_curve(self, y_true: Union[List], y_pred: Union[List],
@@ -122,7 +110,7 @@ class CustomMetricsModel(CEModel):
     @staticmethod
     def get_accuracy_score(self, y_true: Union[List], y_pred: Union[List]):
         try:
-            accuracy_score = metrics.accuracy_score(y_true, y_pred, normalize=False)
+            accuracy_score = metrics.accuracy_score(y_true, y_pred, normalize=True)
         except Exception as e:
             print("Oops! An error occurred:", e)
             return None
@@ -323,7 +311,7 @@ class CustomMetricsModel(CEModel):
     @staticmethod
     def get_r2_score(self, y_true: Union[List], y_pred: Union[List]):
         try:
-            r2_score = metrics.r2_score(y_true, y_pred)
+            r2_score = metrics.r2_score(y_true, y_pred, force_finite=False)
         except Exception as e:
             print("Oops! An error occurred:", e)
             return None
