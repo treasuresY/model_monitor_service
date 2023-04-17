@@ -36,6 +36,7 @@ class Multioutput(Enum):
     def __str__(self):
         return self.value
 
+
 def _append_model_monitor_metrcs(metrics, model_monitor, name):
     metric_found = model_monitor.get(name)
     # Assumes metric_found is always float/int or list/np.array when not none
@@ -105,7 +106,7 @@ class CustomMetricsModel(CEModel):
             output["data"]["mean_absolute_error_uniform_average"] = self.get_mean_absolute_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value)
             output["data"]["mean_absolute_error_raw_values"] = self.get_mean_absolute_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value)
 
-            output["data"]["mean_squared_uniform_average"] = self.get_mean_squared_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value, squared=True)
+            output["data"]["mean_squared_error_uniform_average"] = self.get_mean_squared_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value, squared=True)
             output["data"]["mean_squared_error_raw_values"] = self.get_mean_squared_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value, squared=True)
             output["data"]["root_mean_squared_error_uniform_average"] = self.get_mean_squared_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value, squared=False)
             output["data"]["root_mean_squared_error_raw_values"] = self.get_mean_squared_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value, squared=False)
@@ -118,8 +119,8 @@ class CustomMetricsModel(CEModel):
             output["data"]["median_absolute_error_uniform_average"] = self.get_median_absolute_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value)
             output["data"]["median_absolute_error_raw_values"] = self.get_median_absolute_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value)
 
-            output["data"]["mean_absolute_percentage_error"] = self.get_mean_absolute_percentage_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value)
-            output["data"]["mean_absolute_percentage_error_raw"] = self.get_mean_absolute_percentage_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value)
+            output["data"]["mean_absolute_percentage_error_uniform_average"] = self.get_mean_absolute_percentage_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value)
+            output["data"]["mean_absolute_percentage_error_raw_values"] = self.get_mean_absolute_percentage_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value)
 
             output["data"]["r2_score_uniform_average"] = self.get_r2_score(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value)
             output["data"]["r2_score_raw_values"] = self.get_r2_score(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value)
