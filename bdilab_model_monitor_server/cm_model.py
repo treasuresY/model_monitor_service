@@ -1,5 +1,5 @@
 import json
-from typing import Union, List, Dict, Optional
+from typing import Union, List, Dict, Optional, Any
 
 from bdilab_model_monitor_server.base import ModelResponse
 from bdilab_model_monitor_server.base.model import CEModel
@@ -16,6 +16,25 @@ class TaskType(Enum):
     def __str__(self):
         return self.value
 
+
+class Average(Enum):
+    binary = 'binary'
+    micro = 'micro'
+    macro = 'macro'
+    weighted = 'weighted'
+    samples = 'samples'
+
+    def __str__(self):
+        return self.value
+
+
+class Multioutput(Enum):
+    uniform_average = 'uniform_average'
+    raw_values = 'raw_values'
+    variance_weighted = 'variance_weighted'
+
+    def __str__(self):
+        return self.value
 
 def _append_model_monitor_metrcs(metrics, model_monitor, name):
     metric_found = model_monitor.get(name)
@@ -53,34 +72,75 @@ class CustomMetricsModel(CEModel):
         if task_type == TaskType.classification.value:
             output["data"]["multilabel_confusion_matrix"] = self.get_multilabel_confusion_matrix(self, y_true=y_true, y_pred=y_pred)
             output["data"]["accuracy_score"] = self.get_accuracy_score(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["precision_score"] = self.get_precision_score(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["recall_score"] = self.get_recall_score(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["f1_score"] = self.get_f1_score(self, y_true=y_true, y_pred=y_pred)
+
+            output["data"]["precision_score_each"] = self.get_precision_score(self, y_true=y_true, y_pred=y_pred, average=None)
+            output["data"]["precision_score_micro"] = self.get_precision_score(self, y_true=y_true, y_pred=y_pred, average=Average.micro.value)
+            output["data"]["precision_score_macro"] = self.get_precision_score(self, y_true=y_true, y_pred=y_pred, average=Average.macro.value)
+            output["data"]["precision_score_weighted"] = self.get_precision_score(self, y_true=y_true, y_pred=y_pred, average=Average.weighted.value)
+
+            output["data"]["recall_score_each"] = self.get_recall_score(self, y_true=y_true, y_pred=y_pred, average=None)
+            output["data"]["recall_score_micro"] = self.get_recall_score(self, y_true=y_true, y_pred=y_pred, average=Average.micro.value)
+            output["data"]["recall_score_macro"] = self.get_recall_score(self, y_true=y_true, y_pred=y_pred, average=Average.macro.value)
+            output["data"]["recall_score_weighted"] = self.get_recall_score(self, y_true=y_true, y_pred=y_pred, average=Average.weighted.value)
+
+            output["data"]["f1_score_each"] = self.get_f1_score(self, y_true=y_true, y_pred=y_pred, average=None)
+            output["data"]["f1_score_micro"] = self.get_f1_score(self, y_true=y_true, y_pred=y_pred, average=Average.micro.value)
+            output["data"]["f1_score_macro"] = self.get_f1_score(self, y_true=y_true, y_pred=y_pred, average=Average.macro.value)
+            output["data"]["f1_score_weighted"] = self.get_f1_score(self, y_true=y_true, y_pred=y_pred, average=Average.weighted.value)
+
+            output["data"]["roc_auc_score_each"] = self.get_roc_auc_score(self, y_true=y_true, y_pred=y_pred, average=None)
+            output["data"]["roc_auc_score_micro"] = self.get_roc_auc_score(self, y_true=y_true, y_pred=y_pred, average=Average.micro.value)
+            output["data"]["roc_auc_score_macro"] = self.get_roc_auc_score(self, y_true=y_true, y_pred=y_pred, average=Average.macro.value)
+            output["data"]["roc_auc_score_weighted"] = self.get_roc_auc_score(self, y_true=y_true, y_pred=y_pred, average=Average.weighted.value)
+
             output["data"]["log_loss"] = self.get_log_loss(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["roc_auc_score"] = self.get_roc_auc_score(self, y_true=y_true, y_pred=y_pred)
+
             output["data"]["balanced_accuracy_score"] = self.get_balanced_accuracy_score(self, y_true=y_true, y_pred=y_pred)
             output["data"]["confusion_matrix"] = self.get_confusion_matrix(self, y_true=y_true, y_pred=y_pred)
             output["data"]["matthews_corrcoef"] = self.get_matthews_corrcoef(self, y_true=y_true, y_pred=y_pred)
         elif task_type == TaskType.regression.value:
-            output["data"]["get_explained_variance_score"] = self.get_explained_variance_score(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["mean_absolute_error"] = self.get_mean_absolute_error(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["mean_squared_error"] = self.get_mean_squared_error(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["root_mean_squared_error"] = self.get_root_mean_squared_error(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["mean_squared_log_error"] = self.get_mean_squared_log_error(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["median_absolute_error"] = self.get_median_absolute_error(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["mean_absolute_percentage_error"] = self.get_mean_absolute_percentage_error(self, y_true=y_true, y_pred=y_pred)
-            output["data"]["r2_score"] = self.get_r2_score(self, y_true=y_true, y_pred=y_pred)
+            output["data"]["explained_variance_score_uniform_average"] = self.get_explained_variance_score(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value)
+            output["data"]["explained_variance_score_raw_values"] = self.get_explained_variance_score(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value)
+
+            output["data"]["mean_absolute_error_uniform_average"] = self.get_mean_absolute_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value)
+            output["data"]["mean_absolute_error_raw_values"] = self.get_mean_absolute_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value)
+
+            output["data"]["mean_squared_uniform_average"] = self.get_mean_squared_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value, squared=True)
+            output["data"]["mean_squared_error_raw_values"] = self.get_mean_squared_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value, squared=True)
+            output["data"]["root_mean_squared_error_uniform_average"] = self.get_mean_squared_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value, squared=False)
+            output["data"]["root_mean_squared_error_raw_values"] = self.get_mean_squared_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value, squared=False)
+
+            output["data"]["mean_squared_log_error_uniform_average"] = self.get_mean_squared_log_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value, squared=True)
+            output["data"]["mean_squared_log_error_raw_values"] = self.get_mean_squared_log_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value, squared=True)
+            output["data"]["root_mean_squared_log_error_uniform_average"] = self.get_mean_squared_log_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value, squared=False)
+            output["data"]["root_mean_squared_log_error_raw_values"] = self.get_mean_squared_log_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value, squared=False)
+
+            output["data"]["median_absolute_error_uniform_average"] = self.get_median_absolute_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value)
+            output["data"]["median_absolute_error_raw_values"] = self.get_median_absolute_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value)
+
+            output["data"]["mean_absolute_percentage_error"] = self.get_mean_absolute_percentage_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value)
+            output["data"]["mean_absolute_percentage_error_raw"] = self.get_mean_absolute_percentage_error(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value)
+
+            output["data"]["r2_score_uniform_average"] = self.get_r2_score(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.uniform_average.value)
+            output["data"]["r2_score_raw_values"] = self.get_r2_score(self, y_true=y_true, y_pred=y_pred, multioutput=Multioutput.raw_values.value)
         else:
-            raise Exception("不支持此种类型的模型监控指标")
+            raise Exception("暂不支持此种类型的模型监控指标")
 
         # 删除值为 None 的键值对
         cleaned_output = {}
         cleaned_output["data"] = {k: v for k, v in output["data"].items() if v is not None}
 
         # 度量指标向prometheus公开
+        exclude_metric = list()
+        exclude_metric.append("multilabel_confusion_matrix")
+        exclude_metric.append("confusion_matrix")
+        exclude_metric.append("precision_score_each")
+        exclude_metric.append("recall_score_each")
+        exclude_metric.append("f1_score_each")
+        exclude_metric.append("roc_auc_score_each")
         metrics: List[Dict] = []
         for k in cleaned_output["data"].keys():
-            if k not in ["multilabel_confusion_matrix", "confusion_matrix"]:    # 此类指标结果无法转换为有效的Prometheus指标类型格式
+            if k not in exclude_metric:    # 此类指标结果无法转换为有效的Prometheus指标类型格式
                 _append_model_monitor_metrcs(metrics, cleaned_output["data"], k)
 
         res_data = json.loads(json.dumps(cleaned_output, cls=NumpyEncoder))
@@ -110,128 +170,100 @@ class CustomMetricsModel(CEModel):
     @staticmethod
     def get_accuracy_score(self, y_true: Union[List], y_pred: Union[List]):
         try:
-            accuracy_score = metrics.accuracy_score(y_true, y_pred, normalize=True)
+            return metrics.accuracy_score(y_true, y_pred, normalize=True)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return accuracy_score
 
     @staticmethod
     def get_balanced_accuracy_score(self, y_true: Union[List], y_pred: Union[List]):
         try:
-            balanced_accuracy_score = metrics.balanced_accuracy_score(y_true, y_pred)
+            return metrics.balanced_accuracy_score(y_true, y_pred)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return balanced_accuracy_score
 
     @staticmethod
-    def get_precision_score(self, y_true: Union[List], y_pred: Union[List]):
+    def get_precision_score(self, y_true: Union[List], y_pred: Union[List], average: Any):
         try:
-            precision_score = metrics.precision_score(y_true, y_pred, average=None, zero_division=0)
+            return metrics.precision_score(y_true, y_pred, average=average, zero_division=0)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return precision_score
 
     @staticmethod
     def get_average_precision_score(self, y_true: Union[List], y_pred: Union[List]):
         try:
-            average_precision_score = metrics.average_precision_score(y_true, y_pred)
+            return metrics.average_precision_score(y_true, y_pred)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return average_precision_score
 
     @staticmethod
-    def get_recall_score(self, y_true: Union[List], y_pred: Union[List]):
+    def get_recall_score(self, y_true: Union[List], y_pred: Union[List], average: Any):
         try:
-            recall_score = metrics.recall_score(y_true, y_pred, average=None, zero_division=0)
+            return metrics.recall_score(y_true, y_pred, average=average, zero_division=0)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return recall_score
 
     @staticmethod
     def get_average_recall_score(self, y_true: Union[List], y_pred: Union[List]):
         try:
-            average_recall_score = metrics.average_recall_score(y_true, y_pred, average="macro", zero_division=0)
+            return metrics.average_recall_score(y_true, y_pred, average="macro", zero_division=0)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return average_recall_score
 
     @staticmethod
-    def get_f1_score(self, y_true: Union[List], y_pred: Union[List]):
+    def get_f1_score(self, y_true: Union[List], y_pred: Union[List], average:Any):
         try:
-            f1_score = metrics.f1_score(y_true, y_pred, average=None, zero_division=0)
+            return metrics.f1_score(y_true, y_pred, average=average, zero_division=0)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return f1_score
 
     @staticmethod
     def get_fbeta_score(self, y_true: Union[List], y_pred: Union[List]):
         try:
-            fbeta_score = metrics.fbeta_score(y_true, y_pred, average=None, zero_division=0)
+            return metrics.fbeta_score(y_true, y_pred, average=None, zero_division=0)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return fbeta_score
 
     @staticmethod
     def get_average_f1_score(self, y_true: Union[List], y_pred: Union[List]):
         try:
-            average_f1_score = metrics.average_f1_score(y_true, y_pred, average='macro', zero_division=0)
+            return metrics.average_f1_score(y_true, y_pred, average='macro', zero_division=0)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return average_f1_score
 
     @staticmethod
     def get_log_loss(self, y_true: Union[List], y_pred: Union[List]):
         try:
-            log_loss = metrics.log_loss(y_true, y_pred)
+            return metrics.log_loss(y_true, y_pred)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return log_loss
 
     @staticmethod
     def get_confusion_matrix(self, y_true: Union[List], y_pred: Union[List]):
         try:
-            confusion_matrix = metrics.confusion_matrix(y_true, y_pred)
+            return metrics.confusion_matrix(y_true, y_pred)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return confusion_matrix
 
     @staticmethod
     def get_multilabel_confusion_matrix(self, y_true: Union[List], y_pred: Union[List]):
         try:
-            multilabel_confusion_matrix = metrics.multilabel_confusion_matrix(y_true, y_pred)
+            return metrics.multilabel_confusion_matrix(y_true, y_pred)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return multilabel_confusion_matrix
 
     @staticmethod
     def get_matthews_corrcoef(self, y_true: Union[List], y_pred: Union[List]):
         try:
-            matthews_corrcoef = metrics.matthews_corrcoef(y_true, y_pred)
+            return metrics.matthews_corrcoef(y_true, y_pred)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return matthews_corrcoef
 
     @staticmethod
-    def get_roc_auc_score(self, y_true: Union[List], y_pred: Union[List]):
+    def get_roc_auc_score(self, y_true: Union[List], y_pred: Union[List], average: Any):
         try:
-            roc_auc_score = metrics.roc_auc_score(y_true, y_pred, average=None)
+            return metrics.roc_auc_score(y_true, y_pred, average=average)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return roc_auc_score
 
     # 分水岭
 
@@ -264,69 +296,50 @@ class CustomMetricsModel(CEModel):
 
     # 回归任务指标
     @staticmethod
-    def get_mean_squared_error(self, y_true: Union[List], y_pred: Union[List]):
+    def get_mean_squared_error(self, y_true: Union[List], y_pred: Union[List], multioutput, squared):
         try:
-            mean_squared_error = metrics.mean_squared_error(y_true, y_pred)
+            return metrics.mean_squared_error(y_true, y_pred, multioutput=multioutput, squared=squared)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return mean_squared_error
 
     @staticmethod
-    def get_root_mean_squared_error(self, y_true: Union[List], y_pred: Union[List]):
+    def get_mean_absolute_error(self, y_true: Union[List], y_pred: Union[List], multioutput: Any):
         try:
-            root_mean_squared_error = metrics.mean_squared_error(y_true, y_pred, squared=False)
+            return metrics.mean_absolute_error(y_true, y_pred, multioutput=multioutput)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return root_mean_squared_error
+
 
     @staticmethod
-    def get_mean_absolute_error(self, y_true: Union[List], y_pred: Union[List]):
+    def get_mean_absolute_percentage_error(self, y_true: Union[List], y_pred: Union[List], multioutput):
         try:
-            mean_absolute_error = metrics.mean_absolute_error(y_true, y_pred)
+            return metrics.mean_absolute_percentage_error(y_true, y_pred, multioutput=multioutput)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return mean_absolute_error
 
     @staticmethod
-    def get_mean_absolute_percentage_error(self, y_true: Union[List], y_pred: Union[List]):
+    def get_explained_variance_score(self, y_true: Union[List], y_pred: Union[List], multioutput: Any):
         try:
-            mean_absolute_percentage_error = metrics.mean_absolute_percentage_error(y_true, y_pred)
+            return metrics.explained_variance_score(y_true, y_pred, multioutput=multioutput)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return mean_absolute_percentage_error
+
 
     @staticmethod
-    def get_explained_variance_score(self, y_true: Union[List], y_pred: Union[List]):
+    def get_r2_score(self, y_true: Union[List], y_pred: Union[List], multioutput):
         try:
-            explained_variance_score = metrics.explained_variance_score(y_true, y_pred)
+            return metrics.r2_score(y_true, y_pred, multioutput=multioutput)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return explained_variance_score
-
-    @staticmethod
-    def get_r2_score(self, y_true: Union[List], y_pred: Union[List]):
-        try:
-            r2_score = metrics.r2_score(y_true, y_pred, force_finite=False)
-        except Exception as e:
-            print("Oops! An error occurred:", e)
-            return None
-        return r2_score
 
     # 分水岭
 
     @staticmethod
-    def get_mean_squared_log_error(self, y_true: Union[List], y_pred: Union[List]):
+    def get_mean_squared_log_error(self, y_true: Union[List], y_pred: Union[List], multioutput, squared):
         try:
-            mean_squared_log_error = metrics.mean_squared_log_error(y_true, y_pred)
+            return metrics.mean_squared_log_error(y_true, y_pred, multioutput=multioutput, squared=squared)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return mean_squared_log_error
 
     @staticmethod
     def get_mean_poisson_deviance(self, y_true: Union[List], y_pred: Union[List]):
@@ -365,13 +378,11 @@ class CustomMetricsModel(CEModel):
         return max_error
 
     @staticmethod
-    def get_median_absolute_error(self, y_true: Union[List], y_pred: Union[List]):
+    def get_median_absolute_error(self, y_true: Union[List], y_pred: Union[List], multioutput):
         try:
-            median_absolute_error = metrics.median_absolute_error(y_true, y_pred)
+            return metrics.median_absolute_error(y_true, y_pred, multioutput=multioutput)
         except Exception as e:
-            print("Oops! An error occurred:", e)
             return None
-        return median_absolute_error
 
     @staticmethod
     def get_d2_absolute_error_score(self, y_true: Union[List], y_pred: Union[List]):

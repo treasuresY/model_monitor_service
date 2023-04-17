@@ -18,7 +18,7 @@ from bdilab_model_monitor_server.protocols import Protocol
 from bdilab_model_monitor_server.prometheus_metrics.metrics import BdilabMetrics, validate_metrics
 import uuid
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timezone
 
 DEFAULT_HTTP_PORT = 8080
 CESERVER_LOGLEVEL = os.environ.get("CESERVER_LOGLEVEL", "INFO").upper()
@@ -238,12 +238,13 @@ class EventHandler(tornado.web.RequestHandler):
                         .SetEventID(resp_event_id)
                         .SetSource(self.event_source)
                         .SetEventType(self.event_type)
-                        .SetEventTime(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                        .SetEventTime(datetime.now(timezone.utc).isoformat())   # 符合RFC 3339的时间戳
                         .SetExtensions(event.Extensions())
                 )
                 logging.debug(json.dumps(revent.Properties()))
                 sendCloudEvent(revent, self.reply_url)
             self.write(json.dumps(response.data))
+
 
 class LivenessHandler(tornado.web.RequestHandler):
     def get(self):

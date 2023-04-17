@@ -32,12 +32,12 @@ parser.add_argument(
     "--reply_url", type=str, default="", help="URL to send reply cloudevent"
 )
 parser.add_argument(
-    "--event_source", type=str, default="", help="URI of the event source"
+    "--event_source", type=str, default="1", help="URI of the event source"
 )
 parser.add_argument(
     "--event_type",
     type=str,
-    default="",
+    default="1",
     help="e.g. io.org.kubeflow.serving.inference.outlier",
 )
 parser.add_argument(
