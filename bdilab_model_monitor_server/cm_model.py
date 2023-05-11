@@ -130,7 +130,6 @@ class CustomMetricsModel(CEModel):
         # 删除值为 None 的键值对
         cleaned_output = {}
         cleaned_output["data"] = {k: v for k, v in output["data"].items() if v is not None}
-
         # 度量指标向prometheus公开
         exclude_metric = list()
         exclude_metric.append("multilabel_confusion_matrix")
@@ -141,6 +140,8 @@ class CustomMetricsModel(CEModel):
         exclude_metric.append("roc_auc_score_each")
         metrics: List[Dict] = []
         for k in cleaned_output["data"].keys():
+            # 规范输出结果
+            cleaned_output["data"][k] = np.around(cleaned_output["data"][k], decimals=2)
             if k not in exclude_metric:    # 此类指标结果无法转换为有效的Prometheus指标类型格式
                 _append_model_monitor_metrcs(metrics, cleaned_output["data"], k)
 
